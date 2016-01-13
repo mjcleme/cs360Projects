@@ -1,3 +1,7 @@
 .middle-container {
     background-color: rgb(230, 230, 255);
 }
+
+#profile-pic {
+    max-width: 100%;
+}

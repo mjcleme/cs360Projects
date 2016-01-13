@@ -3,7 +3,7 @@
 <head>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 <link rel="stylesheet" href="style.css">
-<title>Weather</title>
+<title>Home</title>
 </head>
 <body>
 <nav class="navbar navbar-default">
@@ -21,18 +21,73 @@
 
         <div class="collapse navbar-collapse" id="main-navbar">
             <ul class="nav navbar-nav">
-                <li><a href="#">Resume</a></li>
-                <li><a href="#">Current Weather</a></li>
-                <li><a href="#">Weather Forecast</a></li>
+                <li><a href="currWeather.html">Current Weather</a></li>
+                <li><a href="forecast.html">Weather Forecast</a></li>
+                <form class="navbar-form navbar-right" role="contact">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Your message here">
+                    </div>
+                    <button type="submit" class="btn btn-default">Contact me!</button>
             </ul>
         </div>
 
     </div>
 </nav>
 <div class="container-fluid middle-container">
-    <div class="col-xs-10">
+    <div class="col-xs-12">
         <h1>Connor Cook</h1>
-        <img src="https://avatars2.githubusercontent.com/u/12629605?v=3&s=460">
+        <img id="profile-pic" src="https://avatars2.githubusercontent.com/u/12629605?v=3&s=460">
+    </div>
+    <div class="col-xs-12">
+        <h3>Objective</h3>
+        <p id="objective">To obtain a position as a software engineer.</p>
+        <h3>Education</h3>
+        <ul>
+            <li><strong>Bachelor of Computer Science</strong>, <em>Brigham Young University</em>, Provo, Utah <br>
+            April 2017 (anticipated), Cumulative GPA: <em>3.82/4.00</em>
+            </li>
+            <li><strong>Associate of Science</strong>, <em>Utah Valley University</em>, Orem, Utah <br>
+            April 2011, Cumulative GPA: <em>3.84/4.00</em>
+            </li>
+        </ul>
+        <h3>Experience</h3>
+        <p><strong>Brigham Young University</strong><br>
+            August 2015-Present<br>
+            <em>Research Assistant</em></p>
+        <p><strong>BYU Office of IT</strong><br>
+            April 2015-August 2015<br>
+            <em>Junior Platform Engineer</em></p>
+        <h3>Web Experience</h3>
+        <p><strong>CS 201R</strong><br>
+            Gained experience in using MongoDB, NodeJS, AngularJS, Express, and Bootstrap technologies.
+        </p>
+        <p><strong>Topical Guide</strong><br>
+            Designed an AngularJS web app to aid in research in Interactive Topic Modeling
+        </p>
+    </div>
+    <div id="pre-div" class="col-xs-12">
+        <h3>Pre</h3>
+        <pre>This is a block of text in a pre block, maybe used for writing code or just to make it look different.</pre>
+    </div>
+    <div id="table-div" class="col-xs-12">
+        <h3>Table</h3>
+        <table class="table">
+            <tr>
+            <th>Header 1</th>
+            <th>Header 2</th>
+            <th>Header 3</th>
+            </tr>
+            <tr>
+            <td>Data 1</td>
+            <td>Data 2</td>
+            <td>Data 3</td>
+            </tr>
+            <tr>
+            <td>Data 4</td>
+            <td>Data 5</td>
+            <td>Data 6</td>
+            </tr>
+        </table>
     </div>
 </div>
 </body>
