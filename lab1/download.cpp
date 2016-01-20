@@ -160,6 +160,7 @@ int  main(int argc, char* argv[])
     bool debugging = false;
     bool counting = false;
     int count;
+    int headerNum;
 
     if(argc < 4)
       {
@@ -185,8 +186,6 @@ int  main(int argc, char* argv[])
         			break;
         	}
         }
-        printf("%d", argc);
-        printf("%d", optind);
         if (argc - optind == 3) {
         	strcpy(strHostName,argv[optind]);
         	nHostPort=atoi(argv[optind+1]);
@@ -194,89 +193,107 @@ int  main(int argc, char* argv[])
         }
       }
 
-//    printf("\nMaking a socket");
-    /* make a socket */
-    hSocket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-
-    if(hSocket == SOCKET_ERROR)
-    {
-        perror("\nCould not make a socket\n");
-        return 0;
-    }
-
-    /* get IP address from name */
-    pHostInfo=gethostbyname(strHostName);
-    /* copy address into long */
-    memcpy(&nHostAddress,pHostInfo->h_addr,pHostInfo->h_length);
-
-    /* fill address struct */
-    Address.sin_addr.s_addr=nHostAddress;
-    Address.sin_port=htons(nHostPort);
-    Address.sin_family=AF_INET;
-
-    /* connect to host */
-    if(connect(hSocket,(struct sockaddr*)&Address,sizeof(Address)) 
-       == SOCKET_ERROR)
-    {
-        perror("\nCould not connect to host\n");
-        return 0;
-    }
-
-    /* write a request to the server */
-    #define MAXMSG 1024
-    char* message = (char*)malloc(MAXMSG);
-    sprintf(message, "GET %s HTTP/1.1\r\nHost: %s:%d\r\n\r\n", resource, strHostName, nHostPort);
-    printf("\nMessage: %s",message);
-    memset(pBuffer, 0, BUFFER_SIZE);
-    write(hSocket,message,strlen(message));
-//    chomp(message);
-//    printf("\nWriting \"%s\" to server\n",message);
-
-    /* read from socket into buffer
-    ** number returned by read() and write() is the number of bytes
-    ** read or written, with -1 being that an error occured */
-//    nReadAmount=read(hSocket,pBuffer,BUFFER_SIZE);
-//    printf("%s",pBuffer);
-//    char * startline = GetLine(hSocket);
-//    printf("Status line %s\n\n", startline);
-    
-    GetHeaderLines(headerLines, hSocket, false);
-    
-    for (int i = 0; i < headerLines.size(); i++) {
-    	printf("[%d] %s\n", i, headerLines[i]);
-    	if (strstr(headerLines[i], "Content-Length")) {
-    		sscanf(headerLines[i], "Content-Length: %d", contentLength);
-    	}
-    }
-    
-//    printf("\n==============================\n");
-//    printf("Headers are finished, now read the file\n");
-//    printf("Content Length is %d\n", *contentLength);
-//    printf("==============================\n");
-    
-    int rval;
-    if ((rval = read(hSocket, pBuffer, *contentLength)) > 0) {
-    	printf("\n%s", pBuffer);
-    }
-
-//    printf("\nClosing socket\n");
-    /* close socket */                       
-    if(close(hSocket) == SOCKET_ERROR)
-    {
-        perror("\nCould not close socket\n");
-        return 0;
-    }
-
-    free(message);
-    for (int i = 0; i < headerLines.size(); i++) {
-    	free(headerLines[i]);
-    }
-//    free(startline);
-    if (debugging) {
-    	printf("Debugging active");
-    }
-    if (counting) {
-    	printf("Counting active with %d counts", count);
-    }
+    do	{
+    	//printf("\nMaking a socket");
+		/* make a socket */
+		hSocket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+	
+		if(hSocket == SOCKET_ERROR)
+		{
+			perror("\nCould not make a socket\n");
+			return 0;
+		}
+	
+		/* get IP address from name */
+		pHostInfo=gethostbyname(strHostName);
+		/* copy address into long */
+		memcpy(&nHostAddress,pHostInfo->h_addr,pHostInfo->h_length);
+	
+		/* fill address struct */
+		Address.sin_addr.s_addr=nHostAddress;
+		Address.sin_port=htons(nHostPort);
+		Address.sin_family=AF_INET;
+	
+		/* connect to host */
+		if(connect(hSocket,(struct sockaddr*)&Address,sizeof(Address)) 
+		   == SOCKET_ERROR)
+		{
+			perror("\nCould not connect to host\n");
+			return 0;
+		}
+	
+		/* write a request to the server */
+		#define MAXMSG 1024
+		char* message = (char*)malloc(MAXMSG);
+		sprintf(message, "GET %s HTTP/1.1\r\nHost: %s:%d\r\n\r\n", resource, strHostName, nHostPort);
+		if (debugging) {
+			printf("\nHTTP Request:\nMessage: %s",message);
+		}
+		memset(pBuffer, 0, BUFFER_SIZE);
+		write(hSocket,message,strlen(message));
+	//    chomp(message);
+	//    printf("\nWriting \"%s\" to server\n",message);
+	
+		/* read from socket into buffer
+		** number returned by read() and write() is the number of bytes
+		** read or written, with -1 being that an error occured */
+	//    nReadAmount=read(hSocket,pBuffer,BUFFER_SIZE);
+	//    printf("%s",pBuffer);
+	//    char * startline = GetLine(hSocket);
+	//    printf("Status line %s\n\n", startline);
+		
+		GetHeaderLines(headerLines, hSocket, false);
+		
+		char* responseBuffer;
+		if (debugging) {
+			printf("Headers:\n");
+		}
+		for (int i = 0; i < headerLines.size(); i++) {
+			if (debugging) {
+				printf("[%d] %s\n", i, headerLines[i]);
+			}
+			if (strstr(headerLines[i], "Content-Length")) {
+				sscanf(headerLines[i], "Content-Length: %d", contentLength);
+				responseBuffer = (char*)malloc(*contentLength * sizeof(char));
+			}
+		}
+		
+	//    printf("\n==============================\n");
+	//    printf("Headers are finished, now read the file\n");
+	//    printf("Content Length is %d\n", *contentLength);
+	//    printf("==============================\n");
+		
+		int rval;
+		if (debugging && !counting) {
+			printf("\nResponse Body:");
+		}
+		if ((rval = read(hSocket, responseBuffer, *contentLength)) > 0) {
+			if (!counting) {
+				printf("\n%s\n", responseBuffer);
+			}
+		}
+	
+	//    printf("\nClosing socket\n");
+		/* close socket */                       
+		if(close(hSocket) == SOCKET_ERROR)
+		{
+			perror("\nCould not close socket\n");
+			return 0;
+		}
+		free(message);
+		free(responseBuffer);
+		headerNum = headerLines.size();
+		for (int i = 0; i < headerNum; i++) {
+			free(headerLines[i]);
+		}
+		for (int i = 0; i < headerNum; i++) {
+			headerLines.erase(headerLines.begin());
+		}
+	//    free(startline);
+		if (counting) {
+//			printf("Count is %d\n", count);
+			count--;
+		}
+    } while(counting && count > 0);
     return 0;
 }
