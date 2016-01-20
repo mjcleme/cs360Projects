@@ -1,2 +1,2 @@
-download: download.c
-	gcc -o download download.c
+download: download.cpp
+	g++ -o download download.cpp
