@@ -160,6 +160,7 @@ int  main(int argc, char* argv[])
     bool debugging = false;
     bool counting = false;
     int count;
+    int countCopy;
     int headerNum;
 
     if(argc < 4)
@@ -174,10 +175,17 @@ int  main(int argc, char* argv[])
         	switch (c) {
         		case 'c':
         			counting = true;
+        			for (int i = 0; i < strlen(optarg); i++) {
+        				if (!isdigit(optarg[i])) {
+        					perror("-c must be followed by a number");
+        					return 0;
+        				}
+        			}
         			if (sscanf(optarg, "%d", &count) == EOF) {
         				perror("-c must be followed by a number");
         				return 0;
         			}
+        			countCopy = count;
         			break;
         		case 'd':
         			debugging = true;
@@ -188,16 +196,23 @@ int  main(int argc, char* argv[])
         }
         if (argc - optind == 3) {
         	strcpy(strHostName,argv[optind]);
+        	for (int i = 0; i < strlen(argv[optind+1]); i++) {
+        		if (!isdigit(argv[optind+1][i])) {
+        			perror("Port must be a number");
+        			return 0;
+        		}
+        	}
         	nHostPort=atoi(argv[optind+1]);
         	strcpy(resource, argv[optind+2]);
         }
       }
-
+    
     do	{
-    	//printf("\nMaking a socket");
 		/* make a socket */
 		hSocket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-	
+		if (debugging) {
+			printf("Made a socket\n");
+		}
 		if(hSocket == SOCKET_ERROR)
 		{
 			perror("\nCould not make a socket\n");
@@ -206,6 +221,13 @@ int  main(int argc, char* argv[])
 	
 		/* get IP address from name */
 		pHostInfo=gethostbyname(strHostName);
+		if (debugging) {
+			printf("Got host by name\n");
+		}
+		if (pHostInfo == 0) {
+			printf("\nHost is not responding or does not exist\nExiting client\n");
+			return 0;
+		}
 		/* copy address into long */
 		memcpy(&nHostAddress,pHostInfo->h_addr,pHostInfo->h_length);
 	
@@ -214,14 +236,20 @@ int  main(int argc, char* argv[])
 		Address.sin_port=htons(nHostPort);
 		Address.sin_family=AF_INET;
 	
+		if (debugging) {
+			printf("About to connect to host\n");
+		}
 		/* connect to host */
-		if(connect(hSocket,(struct sockaddr*)&Address,sizeof(Address)) 
-		   == SOCKET_ERROR)
+		if(connect(hSocket,(struct sockaddr*)&Address,sizeof(Address)) == SOCKET_ERROR)
 		{
 			perror("\nCould not connect to host\n");
 			return 0;
 		}
 	
+		if (debugging) {
+			printf("Connected to host\n");
+		}
+		
 		/* write a request to the server */
 		#define MAXMSG 1024
 		char* message = (char*)malloc(MAXMSG);
@@ -295,5 +323,8 @@ int  main(int argc, char* argv[])
 			count--;
 		}
     } while(counting && count > 0);
+    if (counting) {
+    	printf("Successfully downloaded the page %d times", countCopy);
+    }
     return 0;
 }
