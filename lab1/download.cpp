@@ -242,6 +242,7 @@ int  main(int argc, char* argv[])
 		/* connect to host */
 		if(connect(hSocket,(struct sockaddr*)&Address,sizeof(Address)) == SOCKET_ERROR)
 		{
+			//It takes forever to time out, but does let you know eventually (2-3 minutes?)
 			perror("\nCould not connect to host\n");
 			return 0;
 		}
@@ -300,6 +301,9 @@ int  main(int argc, char* argv[])
 				printf("\n%s\n", responseBuffer);
 			}
 		}
+        else {
+            perror("Error reading response");
+        }
 	
 	//    printf("\nClosing socket\n");
 		/* close socket */                       
@@ -324,7 +328,7 @@ int  main(int argc, char* argv[])
 		}
     } while(counting && count > 0);
     if (counting) {
-    	printf("Successfully downloaded the page %d times", countCopy);
+    	printf("Successfully downloaded the page %d times\n", countCopy);
     }
     return 0;
 }
