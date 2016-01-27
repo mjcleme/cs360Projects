@@ -1,0 +1,48 @@
+server.cpp:
+  #include <iostream>
+  #include <string.h>
+  //Various other includes, like netinet/in.h for the serv_addr
+
+  int main (int argc, char* argv[]) {
+    std::cout << "Hello" << std::endl;
+
+    //Parse input params
+    int port_num = atoi(argv[1]);
+
+    //Where all our stuff is!
+    //Don't need to append or prepend slashes
+    std::string content_folder = argv[2];
+
+    //socket stuff
+    int fd = socket();
+
+    //Setup socket address
+    struct sockaddr_in serv_addr; //Tells the socket what it will connect to.
+    serv_addr.sin_family = AF_INET; //Tells the socket the type of connection
+    serv_addr.sin_port = htons(port_num); //Tells the socket the port number on the server.
+    serv_addr.sin_addr.s_addr = INADDR_ANY; //Allows any address, rather than specifying an address to connect to.
+
+    //Bind socket to port
+    int bind_return = bind(fd, (sockaddr*) &serv_addr, (socklen_t) sizeof(serv_addr));
+    //Check bind return value
+
+    //Listen!
+    int listen_return = listen(fd, 1000);
+    //Check listen return value
+
+    //Accept
+    //Make empty sockaddr to fill in when connection is made
+    int sock_len = sizeof( struct sockaddr_in );
+    struct sockaddr_in cli_addr;
+    int accept_return = accept(fd, (sockaddr*) &cli_addr, (socklen_t*) &sock_len;
+    //Check accept return value
+
+    //process get request
+    //Parse the headers, using the code from sample.cpp
+    //Could make sample.cpp into a utils header file
+    //and include it.
+
+    //serve files
+
+    return 0;
+  }

@@ -1,5 +1,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/signal.h>
+#include <dirent.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
@@ -10,6 +13,8 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <fstream>
+#include <string>
 
 #define SOCKET_ERROR        -1
 #define BUFFER_SIZE         100
@@ -145,8 +150,40 @@ void GetHeaderLines(vector<char *> &headerLines, int skt, bool envformat)
     free(tline);
 }
 
-void readFromWriteToSocket(int hSocket) {
+//Returns a file, directory listing, or error if path is not a file or directory
+void returnFileOrDir(char* path) {
+
+    struct stat filestat;
+
+    if(stat(path, &filestat)) {
+        printf("Should send 404");
+    }
+    if(S_ISREG(filestat.st_mode)) {
+        FILE *fp = fopen(path, "r");
+        char *buffer = (char *)malloc(filestat.st_size);
+        fread(buffer, filestat.st_size, 1, fp);
+        printf("File: \n%s\n", buffer);
+        free(buffer);
+        fclose(fp);
+    }
+    if(S_ISDIR(filestat.st_mode)) {
+        int len;
+        DIR *dirp;
+        struct dirent *dp;
+
+        dirp = opendir(path);
+        while ((dp = readdir(dirp)) != NULL)
+            printf("name %s\n", dp->d_name);
+        (void)closedir(dirp);
+    }
+
+}
+
+//Reads from the socket, and writes a response
+void readFromWriteToSocket(int hSocket, string basedir) {
     vector<char *> headerLines;
+    char* resource;
+
     //Get the headers
     GetHeaderLines(headerLines, hSocket, false);
 
@@ -154,26 +191,144 @@ void readFromWriteToSocket(int hSocket) {
     for (int i = 0; i < headerLines.size(); i++) {
         printf("%s\n", headerLines[i]);
     }
-    //Create response body (need length for headers)
-    char* body = (char*)malloc(MAX_MSG_SZ);
-    sprintf(body, "<!DOCTYPE html>\n<head></head>\n<body><h1>Hello World!</h1></body>\n</html>");
+
+    resource = strtok(headerLines[0], " ");
+    resource = strtok(NULL, " ");
+    printf("\nResource: %s\n\n", resource);
+
+    string path = basedir + resource;
+    //Get file, if it can be gotten
+    struct stat filestat;
     
-    //Create response headers
-    char* headers = (char*)malloc(MAX_MSG_SZ);
-    sprintf(headers, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\r\n\r\n", strlen(body));
-    
-    if (write(hSocket, headers, strlen(headers)) != SOCKET_ERROR) {
-        printf("Writing response headers to server:\n%s", headers);
+    char* buffer;
+    //Start out as a 404 error page, will be replaced if needed
+    char* bodyText = "<!DOCTYPE html>\n<head></head>\n<body><h1>404</h1><h3>File not found.</h3></body>\n</html>";
+    //Set content type to html by default, for 404
+    string contentType = "text/html";
+    int imageSize = 0;
+
+    bool image = false;
+    //If not found, basically
+    if(stat(path.c_str(), &filestat)) {
+        //Malloc buffer so we can free it later without problems.
+        buffer = (char*)malloc(MAX_MSG_SZ);
+        //404, do nothing
     }
-    else {
-        perror("Error writing response headers");
+    //If a file
+    if(S_ISREG(filestat.st_mode)) {
+        //If a text file
+        if (path.substr(path.size()-3, path.size()-1) == "txt") {
+            FILE *fp = fopen(path.c_str(), "r");
+            buffer = (char *)malloc(filestat.st_size);
+            fread(buffer, filestat.st_size, 1, fp);
+            printf("File: \n%s\n", buffer);
+            bodyText = buffer;
+            contentType = "text/plain";
+            fclose(fp);
+        }
+        //If an html file
+        else if (path.substr(path.size()-4, path.size()-1) == "html") {
+            FILE *fp = fopen(path.c_str(), "r");
+            buffer = (char *)malloc(filestat.st_size);
+            fread(buffer, filestat.st_size, 1, fp);
+            printf("File: \n%s\n", buffer);
+            bodyText = buffer;
+            fclose(fp);
+        }
+        //If a jpg image
+        else if (path.substr(path.size()-3, path.size()-1) == "jpg") {
+            FILE *fp = fopen(path.c_str(), "r");
+            printf("fileSize: %d\n", filestat.st_size);
+            buffer = (char *)malloc(filestat.st_size+1);
+            fread(buffer, filestat.st_size, 1, fp);
+            fclose(fp);
+            image = true;
+            imageSize = filestat.st_size;
+            contentType = "image/jpg";
+        }
+        else if (path.substr(path.size()-3, path.size()-1) == "gif") {
+            FILE *fp = fopen(path.c_str(), "r");
+            printf("fileSize: %d\n", filestat.st_size);
+            buffer = (char *)malloc(filestat.st_size+1);
+            fread(buffer, filestat.st_size, 1, fp);
+            fclose(fp);
+            image = true;
+            imageSize = filestat.st_size;
+            contentType = "image/gif";
+        }
+        else {
+            //404 if not one of these types
+            //Malloc buffer so it can be freed later without problems.
+            buffer = (char*)malloc(MAX_MSG_SZ);
+        }
+    }
+    if(S_ISDIR(filestat.st_mode)) {
+        int len = 0;
+        DIR *dirp;
+        struct dirent *dp;
+        vector<string> dirList;
+
+        dirp = opendir(path.c_str());
+        std::cout << "Starting while loop" << std::endl;
+        while ((dp = readdir(dirp)) != NULL) {
+            char* listing = (char*)malloc(MAX_MSG_SZ);
+            sprintf(listing, "%s", dp->d_name);
+            string temp = listing;
+            dirList.push_back(temp);
+            free(listing);
+        }
+        (void)closedir(dirp);
+        std::cout << "dirp closed" << std::endl;
+        std::cout << "malloc'd buffer" << std::endl;
+        string directoryTempString = "";
+        for (int i = 0; i < dirList.size(); i++) {
+            directoryTempString += dirList[i] + "\n";
+        }
+        buffer = (char*)malloc(directoryTempString.length()+1);
+        copy(directoryTempString.begin(), directoryTempString.end(), buffer);
+        buffer[directoryTempString.size()] = '\0';
+        printf("%s", buffer);
+        bodyText = buffer;
     }
 
-    if (write(hSocket, body, strlen(body)) != SOCKET_ERROR) {
-        printf("Writing response body to server:\n%s", body);
+    char* headers;
+    if (!image) {
+        //Create response headers
+        headers = (char*)malloc(MAX_MSG_SZ);
+        sprintf(headers, "HTTP/1.1 200 OK\nContent-Type: %s\nContent-Length: %d\r\n\r\n", contentType.c_str(), strlen(bodyText));
+        
+        if (write(hSocket, headers, strlen(headers)) != SOCKET_ERROR) {
+            printf("Writing response headers to server:\n%s", headers);
+        }
+        else {
+            perror("Error writing response headers");
+        }
+
+        if (write(hSocket, bodyText, strlen(bodyText)) != SOCKET_ERROR) {
+            printf("Writing response body to server:\n%s", bodyText);
+        }
+        else {
+            perror("Error writing response body");
+        }
     }
     else {
-        perror("Error writing response body");
+        //Create response headers
+        headers = (char*)malloc(MAX_MSG_SZ);
+        sprintf(headers, "HTTP/1.1 200 OK\nContent-Type: %s\nContent-Length: %d\r\n\r\n", contentType.c_str(), imageSize);
+
+        if (write(hSocket, headers, strlen(headers)) != SOCKET_ERROR) {
+            printf("Writing response headers to client:\n%s", headers);
+        }
+        else {
+            perror("Error writing response headers");
+        }
+
+        if (write(hSocket, buffer, imageSize) != SOCKET_ERROR) {
+            printf("Writing an image to the client\n");
+        }
+        else {
+            perror("Error writing response body");
+        }
     }
     
 
@@ -181,6 +336,12 @@ void readFromWriteToSocket(int hSocket) {
     for (int i = 0; i < headerLines.size(); i++) {
         free(headerLines[i]);
     }
+    free(headers);
+    free(buffer);
+}
+
+void handler (int status) {
+    printf("Received signal %d\n", status);
 }
 
 int main(int argc, char* argv[])
@@ -251,6 +412,17 @@ int main(int argc, char* argv[])
         printf("\nCould not listen\n");
         return 0;
     }
+    int optval = 1;
+    setsockopt (hServerSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    //Ensures the server is not killed by PIPE or HUP signals
+    struct sigaction sigold, signew;
+    signew.sa_handler=handler;
+    sigemptyset(&signew.sa_mask);
+    sigaddset(&signew.sa_mask,SIGINT);
+    signew.sa_flags = SA_RESTART;
+    sigaction(SIGHUP,&signew,&sigold);
+    sigaction(SIGPIPE,&signew,&sigold);
 
     for(;;)
     {
@@ -262,10 +434,18 @@ int main(int argc, char* argv[])
               Address.sin_addr.s_addr,
               ntohs(Address.sin_port));
 
-        readFromWriteToSocket(hSocket);
+        readFromWriteToSocket(hSocket, argv[2]);
 
         printf("\nClosing the socket");
         /* close socket */
+        #ifdef notdef
+        linger lin;
+        unsigned int y = sizeof(lin);
+        lin.1_onoff=1;
+        lin.1_linger=10;
+        setsockopt(hSocket, SOL_SOCKET, SO_LINGER, &lin, sizeof(lin));
+        shutdown(hSocket, SHUT_RDWR);
+        #endif
         if(close(hSocket) == SOCKET_ERROR)
         {
          printf("\nCould not close socket\n");

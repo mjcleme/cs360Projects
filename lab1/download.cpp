@@ -132,7 +132,7 @@ void GetHeaderLines(vector<char *> &headerLines, int skt, bool envformat)
             else
             {
                 line = (char *)malloc((strlen(tline) + 10) * sizeof(char));
-                sprintf(line, "HTTP_%s", tline);                
+                sprintf(line, "%s", tline);                
             }
         }
         //fprintf(stderr, "Header --> [%s]\n", line);
