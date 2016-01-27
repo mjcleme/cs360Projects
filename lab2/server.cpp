@@ -132,18 +132,33 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         (void)closedir(dirp);
         string directoryTempString = "<html>\n<head></head>\n<body>\n";
         if (resourceStr == "/") resourceStr = "";
+        bool skipDirListing = false;
         for (int i = 0; i < dirList.size(); i++) {
-            if (dirList[i] != "." && dirList[i] != "..") {
-                directoryTempString += "<a href=\"" + resourceStr + "/" + dirList[i] + "\">";
-                directoryTempString += "<h4>" + dirList[i] + "</h4>";
-                directoryTempString += "</a>\n";
+            if (dirList[i] == "index.html") {
+            skipDirListing = true;
+            path += "/index.html";
+            FILE *fp = fopen(path.c_str(), "r");
+            buffer = (char *)malloc(filestat.st_size);
+            memset(buffer, 0, filestat.st_size);
+            fread(buffer, filestat.st_size, 1, fp);
+            buffer[filestat.st_size] = '\0';
+            fclose(fp);
             }
         }
-        directoryTempString += "</body>\n</html>";
-        buffer = (char*)malloc(directoryTempString.length()+1);
-        copy(directoryTempString.begin(), directoryTempString.end(), buffer);
-        buffer[directoryTempString.size()] = '\0';
-        contentType = "text/html";
+        if (!skipDirListing) {
+            for (int i = 0; i < dirList.size(); i++) {
+                if (dirList[i] != "." && dirList[i] != "..") {
+                    directoryTempString += "<a href=\"" + resourceStr + "/" + dirList[i] + "\">";
+                    directoryTempString += "<h4>" + dirList[i] + "</h4>";
+                    directoryTempString += "</a>\n";
+                }
+            }
+            directoryTempString += "</body>\n</html>";
+            buffer = (char*)malloc(directoryTempString.length()+1);
+            copy(directoryTempString.begin(), directoryTempString.end(), buffer);
+            buffer[directoryTempString.size()] = '\0';
+            contentType = "text/html";
+        }
     }
 
     //Writing stuff
