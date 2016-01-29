@@ -2,3 +2,4 @@
 *.gz
 *.tgz
 *.zip
+nohup.out

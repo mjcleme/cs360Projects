@@ -60,8 +60,9 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         //Generate our error message and stick it into the buffer
         string errorMessage = "<!DOCTYPE html>\n<head></head>\n<body><h1>404</h1><h3>File not found.</h3></body>\n</html>";
         buffer = (char*)malloc(errorMessage.length()+1);
-        (buffer, errorMessage.c_str(), errorMessage.length());
+        memcpy(buffer, errorMessage.c_str(), errorMessage.length());
         buffer[errorMessage.length()] = '\0';
+        contentType = "text/html";
     }
     //If a file
     else if(S_ISREG(filestat.st_mode)) {
@@ -78,7 +79,7 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         //If an html file
         else if (path.substr(path.size()-4, path.size()-1) == "html") {
             FILE *fp = fopen(path.c_str(), "r");
-            buffer = (char *)malloc(filestat.st_size);
+            buffer = (char *)malloc(filestat.st_size+1);
             memset(buffer, 0, filestat.st_size);
             fread(buffer, filestat.st_size, 1, fp);
             buffer[filestat.st_size] = '\0';
@@ -87,7 +88,7 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         //If a jpg image
         else if (path.substr(path.size()-3, path.size()-1) == "jpg") {
             FILE *fp = fopen(path.c_str(), "r");
-            buffer = (char *)malloc(filestat.st_size+1);
+            buffer = (char *)malloc(filestat.st_size);
             memset(buffer, 0, filestat.st_size);
             fread(buffer, filestat.st_size, 1, fp);
             fclose(fp);
@@ -97,7 +98,7 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         }
         else if (path.substr(path.size()-3, path.size()-1) == "gif") {
             FILE *fp = fopen(path.c_str(), "r");
-            buffer = (char *)malloc(filestat.st_size+1);
+            buffer = (char *)malloc(filestat.st_size);
             memset(buffer, 0, filestat.st_size);
             fread(buffer, filestat.st_size, 1, fp);
             fclose(fp);
@@ -113,6 +114,7 @@ void readFromWriteToSocket(int hSocket, string basedir) {
             buffer = (char*)malloc(errorMessage.length()+1);
             memcpy(buffer, errorMessage.c_str(), errorMessage.length());
             buffer[errorMessage.length()] = '\0';
+            contentType = "text/html";
         }
     }
     else if(S_ISDIR(filestat.st_mode)) {
@@ -135,14 +137,14 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         bool skipDirListing = false;
         for (int i = 0; i < dirList.size(); i++) {
             if (dirList[i] == "index.html") {
-            skipDirListing = true;
-            path += "/index.html";
-            FILE *fp = fopen(path.c_str(), "r");
-            buffer = (char *)malloc(filestat.st_size);
-            memset(buffer, 0, filestat.st_size);
-            fread(buffer, filestat.st_size, 1, fp);
-            buffer[filestat.st_size] = '\0';
-            fclose(fp);
+                skipDirListing = true;
+                path += "/index.html";
+                FILE *fp = fopen(path.c_str(), "r");
+                buffer = (char *)malloc(filestat.st_size+1);
+                memset(buffer, 0, filestat.st_size);
+                fread(buffer, filestat.st_size, 1, fp);
+                buffer[filestat.st_size] = '\0';
+                fclose(fp);
             }
         }
         if (!skipDirListing) {
@@ -179,6 +181,7 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         else {
             perror("Error writing response body");
         }
+        free(buffer);
     }
     else if (error) {
         //Create response headers
@@ -196,6 +199,7 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         else {
             perror("Error writing response body");
         }
+        free(buffer);
     }
     else {
         //Create response headers
