@@ -1,2 +1,2 @@
-thread: thread.c
-	gcc -pthread -o thread thread.c
+thread: thread.cpp
+	g++ -pthread -o thread thread.cpp
