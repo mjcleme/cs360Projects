@@ -15,6 +15,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <pthread.h>
+#include <semaphore.h>
+
 #include "cs360utils.h"
 
 #define SOCKET_ERROR        -1
@@ -25,17 +28,21 @@
 
 using namespace std;
 
+//Global variable so all threads can see it
+string basedir;
+
 //Reads from the socket, and writes a response
-void readFromWriteToSocket(int hSocket, string basedir) {
+void* readFromWriteToSocket(void *socket) {
     vector<char *> headerLines;
     char* resource;
+    int hSocket = (long)socket;
 
     //Get the headers
     GetHeaderLines(headerLines, hSocket, false);
 
     if (headerLines.size() == 0) {
         //If we don't receive headers, refuse the connection so we don't crash.
-        return;
+        return 0;
     }
 
     resource = strtok(headerLines[0], " ");
@@ -226,6 +233,22 @@ void readFromWriteToSocket(int hSocket, string basedir) {
         free(headerLines[i]);
     }
     free(headers);
+
+
+    /* close socket */
+    #ifdef notdef
+    linger lin;
+    unsigned int y = sizeof(lin);
+    lin.1_onoff=1;
+    lin.1_linger=10;
+    setsockopt(hSocket, SOL_SOCKET, SO_LINGER, &lin, sizeof(lin));
+    shutdown(hSocket, SHUT_RDWR);
+    #endif
+    if(close(hSocket) == SOCKET_ERROR)
+    {
+     perror("\nCould not close socket\n");
+     return 0;
+    }
 }
 
 void handler (int status) {
@@ -241,16 +264,20 @@ int main(int argc, char* argv[])
     char pBuffer[BUFFER_SIZE];
     int nHostPort;
     char baseDir[MAX_MSG_SZ];
+    int numThreads;
 
-    if(argc < 3)
+    basedir = baseDir;
+
+    if(argc < 4)
       {
-        printf("\nUsage: server host-port base-dir\n");
+        printf("\nUsage: server host-port num-threads base-dir\n");
         return 0;
       }
     else
       {
         nHostPort=atoi(argv[1]);
-        strcpy(baseDir, argv[2]);
+        basedir = argv[3];
+        numThreads=atoi(argv[2]);
       }
 
 
@@ -299,27 +326,17 @@ int main(int argc, char* argv[])
     sigaction(SIGHUP,&signew,&sigold);
     sigaction(SIGPIPE,&signew,&sigold);
 
+    pthread_t threads[numThreads];
+
     for(;;)
     {
         /* get the connected socket */
         hSocket=accept(hServerSocket,(struct sockaddr*)&Address,(socklen_t *)&nAddressSize);
+        printf("Connection accepted\n");
 
+        int rc1;
 
-        readFromWriteToSocket(hSocket, argv[2]);
+        if ((rc1=pthread_create( &threads[0], NULL, readFromWriteToSocket, (void*)hSocket)) != 0) { perror("Thread creation failed"); }
 
-        /* close socket */
-        #ifdef notdef
-        linger lin;
-        unsigned int y = sizeof(lin);
-        lin.1_onoff=1;
-        lin.1_linger=10;
-        setsockopt(hSocket, SOL_SOCKET, SO_LINGER, &lin, sizeof(lin));
-        shutdown(hSocket, SHUT_RDWR);
-        #endif
-        if(close(hSocket) == SOCKET_ERROR)
-        {
-         perror("\nCould not close socket\n");
-         return 0;
-        }
     }
 }
