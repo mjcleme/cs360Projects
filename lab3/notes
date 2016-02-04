@@ -1,0 +1,2 @@
+We'll use sem_open (create named semaphore), sem_wait (wait), sem_post (signal).
+He suggests using stuff from sample2.cpp for the lab.
