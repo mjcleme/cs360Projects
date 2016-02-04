@@ -113,7 +113,6 @@ char *FormatHeader(char *str, char *prefix)
 void GetHeaderLines(std::vector<char *> &headerLines, int skt, bool envformat)
 {
 
-    std::cout << "1" << std::endl;
     // Read the headers, look for specific ones that may change our responseCode
     char *line;
     char *tline;

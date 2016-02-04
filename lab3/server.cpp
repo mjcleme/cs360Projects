@@ -371,9 +371,7 @@ int main(int argc, char* argv[])
     {
         /* get the connected socket */
         hSocket=accept(hServerSocket,(struct sockaddr*)&Address,(socklen_t *)&nAddressSize);
-        printf("Connection accepted\n");
         sockqueue.push(hSocket);
-        printf("socket pushed\n");
 
     }
 }
