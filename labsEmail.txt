@@ -1,0 +1,23 @@
+During the migration from the old CS 360 to the new Systems II class, there will be some overlap in the assignments for CS 360 and CS 201R. Since you have already had CS 201R, or are currently taking it, you should have already completed labs 6-10.
+
+If you have ever worked on your family history, you know that it is very difficult to resolve duplicates. This alternate set of labs will create a system that should help in duplicate removal.
+
+Lab 6) Use jquery to connect to familysearch.org. You will need to create an application key through https://familysearch.org/developers/docs/api/resources and look up a person by ID
+
+7) Create a REST service that would allow you to return family tree statistics for individuals (How many John Smith individuals lived in Ohio in 1920)
+
+8) Import family tree data into a mongo database and compute real statistics for a given ID.
+
+9) Use the familysearch API to authenticate users using the angular API.
+
+10) Create a full angular app that will allow you to report statistics on an ID that the user inputs.
+
+11) Lab 11 will be new to you, so you can complete it with the rest of the class.
+
+If you have a burning desire to do something else, please respond to clement@byu.edu with your proposal for these labs, otherwise, I will plan on your doing these labs.
+
+I will try to spend part of class talking about these labs, but you may find it more helpful to meet together instead of attending class. You are welcome to use my lab (2208 TMCB) during class hours if you need a place to meet.
+
+You are still welcome to work in groups with any students in class, but if you choose a group that doesnt include other students who have had 201R, then you will need to attend class so that you can work with them.
+
+We can communicate through this learningsuite group to coordinate efforts on these labs.
