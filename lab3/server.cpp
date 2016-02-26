@@ -372,6 +372,5 @@ int main(int argc, char* argv[])
         /* get the connected socket */
         hSocket=accept(hServerSocket,(struct sockaddr*)&Address,(socklen_t *)&nAddressSize);
         sockqueue.push(hSocket);
-
     }
 }
